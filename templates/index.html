@@ -102,6 +102,21 @@
             color: #0056b3;
         }
 
+        .distance-icon-overlay {
+            position: absolute;
+            top: -18px; /* Adjust based on actual layout */
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 5px 8px;
+            border-radius: 5px;
+            font-size: 12px;
+            color: #000;
+            white-space: nowrap;
+        }
+
+
+
         .custom-icon-distance {
             background-color: #fff;
             border-radius: 5px;
@@ -300,20 +315,20 @@
         } else {
             planeMarker.setLatLng(segment.start.coords);
         }
-        planeMarker.bindPopup(popupContent, {autoClose: false}).openPopup();
+        planeMarker.bindPopup(popupContent, {autoClose: true}).openPopup();
 
         // Close the popup after a brief pause
         setTimeout(() => {
             planeMarker.closePopup();
             callback(); // Continue processing after the popup has been shown and closed
-        }, 500); // This delay mimics the pause duration for home games
+        }, 200); // This delay mimics the pause duration for home games
     }
 
 
     function addDistanceMarker(start, end, segment) {
+        // Handle home games with a temporary popup
         if (segment.type === "home") {
-            // For home games, display a temporary popup with game details
-            var popupContentHome = `
+            let popupContentHome = `
             <div class="custom-popup-home">
                 <h4>Home Game</h4>
                 <p>Matchup: ${segment.matchup}</p>
@@ -322,64 +337,67 @@
             </div>
         `;
 
-            // Create a temporary popup at the home location
-            var tempPopup = L.popup({autoClose: false, closeOnClick: false, maxWidth: 250, maxLength: 250})
-                .setLatLng(segment.end.coords)
+            L.popup({
+                className: 'home-game-popup',
+                autoClose: true,
+                closeOnClick: true,
+                maxWidth: 250
+            })
+                .setLatLng(end) // Use 'end' as the home arena coordinates
                 .setContent(popupContentHome)
                 .openOn(map);
-
-            // Automatically close the popup after a certain duration
-            setTimeout(() => {
-                map.closePopup(tempPopup);
-            }, 2000); // Adjust time as needed
-
-            return; // Exit the function early for home games
         }
 
-        // Calculate midpoint for distance marker for away games
-        var midPoint = L.latLngBounds(start, end).getCenter();
 
-        // Popup content for away games
-        var popupContent = `
-        <div class="custom-popup-away">
-            <h4>Travel Details</h4>
-            <p>Matchup: ${segment.matchup}</p>
-            <p>Date: ${segment.date}</p>
-            <p>Distance: ${segment.distance.toFixed(2)} km</p>
-        </div>
+        if (segment.distance > 0) {
+            // Calculate midpoint for distance marker for travel segments
+            let midPoint = L.latLngBounds(start, end).getCenter();
+
+            // Popup content for the distance marker
+            let popupContent = `
+            <div class="custom-popup">
+                <h4>Travel Details</h4>
+                <p>Matchup: ${segment.matchup}</p>
+                <p>Date: ${segment.date}</p>
+                <p>Distance: ${segment.distance.toFixed(2)} km</p>
+            </div>
+        `;
+
+            // Custom icon for distance marker
+            let distanceIconHtml = `
+        <div class="distance-icon-overlay">${segment.distance.toFixed(2)} km</div>
     `;
 
-        // Distance marker at the midpoint
-        var distanceMarker = L.marker(midPoint, {
-            icon: L.divIcon({
-                className: 'custom-icon-distance',
-                html: `<span class="custom-icon-text">${segment.distance.toFixed(2)} km</span>`,
-                iconSize: [70, 30]
+            // Place a distance marker at the midpoint for travel segments
+            L.marker(midPoint, {
+                icon: L.divIcon({
+                    className: 'custom-icon-distance',
+                    html: distanceIconHtml, // Using the distanceIconHtml variable
+                    iconSize: L.point(0, 0) // Adjust the size as necessary for better visibility
+                })
             })
-        }).addTo(map).bindPopup(popupContent);
+                .addTo(map)
+                .bindPopup(popupContent);
+        }
+            // Ensure start and end markers are placed for visual clarity
+            L.marker(start, {
+                icon: L.divIcon({
+                    className: 'custom-icon-start',
+                    html: `<i class="fas fa-play"></i>`, // Example using Font Awesome for a play icon
+                    iconSize: [7, 7]
+                })
+            }).addTo(map);
 
-        // Start marker
-        var startMarker = L.marker(start, {
-            icon: L.divIcon({
-                className: 'custom-icon-start',
-                html: `<i class="fas fa-play"></i>`, // Example using Font Awesome
-                iconSize: [7, 7]
-            })
-        }).addTo(map);
-
-        // End marker
-        var endMarker = L.marker(end, {
+        L.marker(end, {
             icon: L.divIcon({
                 className: 'custom-icon-end',
-                html: `<i class="fas fa-flag-checkered"></i>`, // Example using Font Awesome
+                html: `<i class="fas fa-flag-checkered"></i>`,
                 iconSize: [7, 7]
             })
         }).addTo(map);
 
-        // Adding the created markers to the allMarkers array for easy reset
-        allMarkers.push(distanceMarker, startMarker, endMarker);
-    }
 
+    }
 </script>
 </body>
 </html>
