@@ -9,11 +9,14 @@
     <link href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" rel="stylesheet" />
     <style>
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Roboto', sans-serif;
             background: linear-gradient(135deg, #1e1e1e 0%, #212121 100%); /* Gradient background */
             color: #fff; /* White text color */
             margin: 0;
             padding: 0;
+            font-size: 16px; /* Adjust as needed */
+            font-weight: 400; /* Normal font weight */
+            line-height: 1.6; /* Improved readability */
         }
         header {
             background: linear-gradient(135deg, #940000 0%, #7c241c 100%); /* Gradient background */
@@ -24,7 +27,8 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Add shadow */
         }
         header h1 {
-            font-size: 2.5rem; /* Larger font size */
+            font-size: 3rem; /* Larger font size */
+            font-weight: 700; /* Bold font weight for emphasis */
             margin-bottom: 0.5rem;
         }
         header p {
@@ -33,6 +37,7 @@
         }
         .container {
             max-width: 1200px; /* Limit container width */
+            font-weight: 400; /* Normal font weight */
             margin: 0 auto;
         }
         #playerNameInput {
@@ -173,7 +178,12 @@
 <main>
     <div class="container map-container">
         <div id="map"></div>
-        <div id="totalMiles">Total distance: 0 km</div>
+        <div id="totalMiles">
+            Total distance: 0.00 km<br>
+            Total fuel usage: 0.00 - 0.00 gallons<br>
+            Total emissions: 0.00 - 0.00 kg CO2<br>
+            Total team cost: $0.00 - $0.00
+        </div>
         <!-- Marker label for displaying individual miles -->
         <div id="markerLabel" class="marker-label"></div>
     </div>
@@ -201,6 +211,14 @@
     var polylineLayers = [];
     var allMarkers = [];
     var currentSearchId = 0;
+    var AVG_FUEL_CONSUMPTION_PER_KM = 0.36;
+    var KG_CO2_PER_GALLON_JET_FUEL = 9.57;
+    var COST_PER_GALLON_JET_FUEL = 2.22;
+    var cumulativeDistance = 0;
+    var cumulativeFuelUsage = 0;
+    var cumulativeEmissions = 0;
+    var cumulativeCost = 0
+    var variation = 0.1;
 
     document.getElementById('searchForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -264,11 +282,28 @@
         // Remove all markers
         allMarkers.forEach(marker => map.removeLayer(marker));
         allMarkers = []; // Reset the array for the next search
+
+        // Reset displayed metrics
+        document.getElementById('totalMiles').innerHTML = `
+        Total distance: 0.00 km<br>
+        Total fuel usage: 0.00 - 0.00 gallons<br>
+        Total emissions: 0.00 - 0.00 kg CO2<br>
+        Total team cost: $0.00 - $0.00
+    `;
+
+        // Reset global cumulative metrics if they exist in your script
+        cumulativeDistance = 0;
+        cumulativeFuelUsage = 0;
+        cumulativeEmissions = 0;
+        cumulativeCost = 0;
     }
 
 
-    function animateMovement(start, end, totalDistance) {
+
+    function animateMovement(start, end, segmentDistance) {
         var startTime = performance.now();
+        var cumulativeDistance = 0; // Reset cumulative distance for each animation segment
+        var lastPosition = start; // Store the last position to check for movement
 
         function animate(now) {
             var elapsedTime = now - startTime;
@@ -281,7 +316,41 @@
             if (t < 1) {
                 window.requestAnimationFrame(animate);
             } else {
-                document.getElementById('totalMiles').textContent = `Total distance: ${totalDistance.toFixed(2)} km`;
+                // Check if there is any movement
+                if (nextPos[0] !== lastPosition[0] || nextPos[1] !== lastPosition[1]) {
+                    // Ensure segmentDistance is treated as a number and properly accumulated
+                    var distance = parseFloat(segmentDistance) || 0;
+                    cumulativeDistance += distance;
+
+                    var segmentFuelUsage = distance * AVG_FUEL_CONSUMPTION_PER_KM;
+                    cumulativeFuelUsage += segmentFuelUsage;
+
+                    var segmentEmissions = segmentFuelUsage * KG_CO2_PER_GALLON_JET_FUEL;
+                    cumulativeEmissions += segmentEmissions;
+
+                    var segmentCost = segmentFuelUsage * COST_PER_GALLON_JET_FUEL;
+                    cumulativeCost += segmentCost;
+
+                    // Calculate ranges
+                    var variation = 0.1; // 10% variation for ranges
+                    var emissionsRangeLow = cumulativeEmissions * (1 - variation);
+                    var emissionsRangeHigh = cumulativeEmissions * (1 + variation);
+                    var fuelUsageRangeLow = cumulativeFuelUsage * (1 - variation);
+                    var fuelUsageRangeHigh = cumulativeFuelUsage * (1 + variation);
+                    var costRangeLow = cumulativeCost * (1 - variation);
+                    var costRangeHigh = cumulativeCost * (1 + variation);
+
+                    // Update the display with calculated ranges
+                    document.getElementById('totalMiles').innerHTML = `
+                Total distance: ${cumulativeDistance.toFixed(2)} km<br>
+                Total fuel usage: ${fuelUsageRangeLow.toFixed(2)} - ${fuelUsageRangeHigh.toFixed(2)} gallons<br>
+                Total emissions: ${emissionsRangeLow.toFixed(2)} - ${emissionsRangeHigh.toFixed(2)} kg CO2<br>
+                Total fuel cost: $${costRangeLow.toFixed(2)} - $${costRangeHigh.toFixed(2)}
+            `;
+                }
+
+                // Update last position
+                lastPosition = nextPos;
             }
         }
 
@@ -329,13 +398,13 @@
         // Handle home games with a temporary popup
         if (segment.type === "home") {
             let popupContentHome = `
-            <div class="custom-popup-home">
-                <h4>Home Game</h4>
-                <p>Matchup: ${segment.matchup}</p>
-                <p>Date: ${segment.date}</p>
-                <p>No travel required</p>
-            </div>
-        `;
+        <div class="custom-popup-home">
+            <h4>Home Game</h4>
+            <p>Matchup: ${segment.matchup}</p>
+            <p>Date: ${segment.date}</p>
+            <p>No travel required</p>
+        </div>
+    `;
 
             L.popup({
                 className: 'home-game-popup',
@@ -348,20 +417,30 @@
                 .openOn(map);
         }
 
-
         if (segment.distance > 0) {
-            // Calculate midpoint for distance marker for travel segments
-            let midPoint = L.latLngBounds(start, end).getCenter();
+            // Calculate detailed metrics for the segment
+            let fuelUsage = segment.distance * AVG_FUEL_CONSUMPTION_PER_KM;
+            let emissions = fuelUsage * KG_CO2_PER_GALLON_JET_FUEL;
+            let cost = fuelUsage * COST_PER_GALLON_JET_FUEL;
 
-            // Popup content for the distance marker
+            // Calculate ranges with a 10% variation for a more dynamic presentation
+            let variation = 0.1;
+            let fuelUsageRange = `${(fuelUsage * (1 - variation)).toFixed(2)} - ${(fuelUsage * (1 + variation)).toFixed(2)}`;
+            let emissionsRange = `${(emissions * (1 - variation)).toFixed(2)} - ${(emissions * (1 + variation)).toFixed(2)}`;
+            let costRange = `${(cost * (1 - variation)).toFixed(2)} - ${(cost * (1 + variation)).toFixed(2)}`;
+
+            let midPoint = L.latLngBounds(start, end).getCenter();
             let popupContent = `
-            <div class="custom-popup">
-                <h4>Travel Details</h4>
-                <p>Matchup: ${segment.matchup}</p>
-                <p>Date: ${segment.date}</p>
-                <p>Distance: ${segment.distance.toFixed(2)} km</p>
-            </div>
-        `;
+        <div class="custom-popup">
+            <h4>Travel Details</h4>
+            <p>Matchup: ${segment.matchup}</p>
+            <p>Date: ${segment.date}</p>
+            <p>Distance: ${segment.distance.toFixed(2)} km</p>
+            <p>Fuel Usage: ${fuelUsageRange} gallons</p>
+            <p>Emissions: ${emissionsRange} kg CO2</p>
+            <p>Cost: $${costRange}</p>
+        </div>
+    `;
 
             // Custom icon for distance marker
             let distanceIconHtml = `
@@ -369,7 +448,7 @@
     `;
 
             // Place a distance marker at the midpoint for travel segments
-            L.marker(midPoint, {
+            let distanceMarker = L.marker(midPoint, {
                 icon: L.divIcon({
                     className: 'custom-icon-distance',
                     html: distanceIconHtml, // Using the distanceIconHtml variable
@@ -378,23 +457,27 @@
             })
                 .addTo(map)
                 .bindPopup(popupContent);
+            allMarkers.push(distanceMarker); // Add to the array for easy reset
         }
             // Ensure start and end markers are placed for visual clarity
-            L.marker(start, {
+            let startMarker = L.marker(start, {
                 icon: L.divIcon({
                     className: 'custom-icon-start',
                     html: `<i class="fas fa-play"></i>`, // Example using Font Awesome for a play icon
                     iconSize: [7, 7]
                 })
             }).addTo(map);
+            allMarkers.push(startMarker); // Add to the array for easy reset
 
-        L.marker(end, {
+
+        let endMarker = L.marker(end, {
             icon: L.divIcon({
                 className: 'custom-icon-end',
                 html: `<i class="fas fa-flag-checkered"></i>`,
                 iconSize: [7, 7]
             })
         }).addTo(map);
+        allMarkers.push(endMarker); // Add to the array for easy reset
 
 
     }
