@@ -5,10 +5,8 @@ The NBA Player Travel Emissions Analyzer is a data visualization tool designed t
 ## Features
 
 - **Player-Specific Analysis:** Analyze the travel routes and carbon emissions for individual NBA players over the course of a season.
-- **Team-Based Analysis:** Explore the environmental impact of entire NBA teams by visualizing their collective travel emissions.
 - **Interactive Map Visualization:** Visualize NBA player travel routes on an interactive map, including distances traveled and carbon emissions generated.
 - **Emission Calculation:** Accurately calculate carbon emissions based on travel distances and fuel consumption data.
-- **User-Friendly Interface:** Intuitive interface allowing users to easily input player names or team names and visualize travel data with just a few clicks.
 
 ## How It Works
 
