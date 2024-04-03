@@ -18,6 +18,8 @@ def home():
 @app.route('/api/player-travel-data')
 def get_player_travel_data():
     player_name = request.args.get('name')
+    season = request.args.get('season', '2013-14')  # Use a default season if none is specified
+
     if not player_name:
         return jsonify({"error": "Player name is required."}), 400
 
@@ -25,16 +27,13 @@ def get_player_travel_data():
     if not player_id:
         return jsonify({"error": "Player not found."}), 404
 
-    season = '2023-24'
     game_logs_df = fetch_game_logs('player', player_id, season)
-
-    home_team_abbreviation = find_team_abbreviation_for_player(player_id)
+    home_team_abbreviation = find_team_abbreviation_for_player(player_id, season)
 
     if not home_team_abbreviation:
         return jsonify({"error": "Could not determine player's team."}), 404
 
     travel_data = travel_data_to_json(game_logs_df, home_team_abbreviation)
-
     return jsonify(travel_data)
 
 if __name__ == '__main__':

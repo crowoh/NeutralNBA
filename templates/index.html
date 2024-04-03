@@ -10,69 +10,83 @@
     <style>
         body {
             font-family: 'Roboto', sans-serif;
-            background: linear-gradient(135deg, #1e1e1e 0%, #212121 100%); /* Gradient background */
-            color: #fff; /* White text color */
+            background: linear-gradient(135deg, #1e1e1e 0%, #212121 100%);
+            color: #fff;
             margin: 0;
             padding: 0;
-            font-size: 16px; /* Adjust as needed */
-            font-weight: 400; /* Normal font weight */
-            line-height: 1.6; /* Improved readability */
+            font-size: 16px;
+            font-weight: 400;
+            line-height: 1.6;
         }
         header {
-            background: linear-gradient(135deg, #940000 0%, #7c241c 100%); /* Gradient background */
+            background: linear-gradient(135deg, #b60101 0%, #020144 100%);
             color: #eee;
             padding: 1rem;
             text-align: center;
             margin-bottom: 1rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Add shadow */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         header h1 {
-            font-size: 3rem; /* Larger font size */
-            font-weight: 700; /* Bold font weight for emphasis */
+            font-size: 2rem;
+            font-weight: 700;
             margin-bottom: 0.5rem;
         }
         header p {
-            font-size: 1.2rem; /* Larger font size */
+            font-size: 1.2rem;
             margin-bottom: 0;
         }
         .container {
-            max-width: 1200px; /* Limit container width */
-            font-weight: 400; /* Normal font weight */
+            max-width: 1200px;
             margin: 0 auto;
+            padding: 0 15px;
+        }
+        #searchForm {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 1rem;
         }
         #playerNameInput {
-            border-radius: 25px; /* More rounded input */
-            border: 1px solid #999; /* Darker border color */
-            padding: 0.7rem; /* Larger padding */
-            width: 70%;
+            flex-grow: 2;
+            flex-basis: calc(60% - 20px);
+            border-radius: 25px;
+            border: 1px solid #999;
+            padding: 0.7rem;
+        }
+        #seasonSelection {
+            flex-grow: 1;
+            flex-basis: 20%;
+            border-radius: 25px;
+            padding: 0.7rem;
         }
         #searchForm button {
-            border-radius: 25px; /* More rounded button */
+            flex-basis: content;
+            border-radius: 25px;
             border: 1px solid #000000;
-            background: linear-gradient(135deg, #940000 0%, #7c241c 100%); /* Gradient background */
+            background: linear-gradient(135deg, #940000 0%, #7c241c 100%);
             color: white;
-            padding: 0.7rem 1.5rem; /* Larger padding */
+            padding: 0.7rem 1.5rem;
             cursor: pointer;
-            transition: background-color 0.3s ease; /* Smooth hover transition */
+            transition: background-color 0.3s ease;
         }
         #searchForm button:hover {
-            background: linear-gradient(135deg, #6b1b16 0%, #5a1712 100%); /* Darker red gradient on hover */
+            background: linear-gradient(135deg, #6b1b16 0%, #5a1712 100%);
         }
         .map-container {
             position: relative;
             padding: 1rem;
-            border-radius: 12px; /* More rounded container */
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2); /* Larger shadow */
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
         }
         #map {
             height: 400px;
-            width: 100%;
-            border-radius: 12px; /* More rounded map */
+            border-radius: 12px;
             margin-bottom: 1rem;
         }
         #totalMiles {
             text-align: center;
-            font-size: 1.4rem; /* Larger font size */
+            font-size: 1.4rem;
             margin-bottom: 1rem;
         }
         .marker-label {
@@ -119,6 +133,20 @@
             color: #000;
             white-space: nowrap;
         }
+        footer {
+            color: #fff;
+            padding: 0.5rem 0;
+        }
+        footer a {
+            color: #ff4757; /* Or any color that fits your theme */
+            text-decoration: none;
+        }
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+
+
 
 
 
@@ -159,6 +187,16 @@
             border-radius: 50%;
         }
 
+        @media (max-width: 768px) {
+            #searchForm {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            #playerNameInput, #seasonSelection {
+                flex-basis: auto; /* Resets flex-basis to default for mobile */
+            }
+        }
+
     </style>
 
     </head>
@@ -167,11 +205,27 @@
     <div class="container">
         <img src="static/img/icon.png" alt="Logo" style="max-width: 100px; margin-bottom: 10px;"> <!-- Logo -->
         <h1>NBA Team Travel Visualization</h1>
-        <p>Explore the travel routes and environmental impact of NBA teams throughout the season.</p>
+        <p>Explore the travel routes and environmental impact of NBA players.</p>
         <form id="searchForm" class="d-flex">
             <input type="text" id="playerNameInput" class="form-control" placeholder="Enter player name" required>
+            <select id="seasonSelection" class="form-control mx-2">
+                <option value="2023-24">2023-24</option>
+                <option value="2022-23">2022-23</option>
+                <option value="2021-22">2021-22</option>
+                <option value="2020-21">2020-21</option>
+                <option value="2019-20">2019-20</option>
+                <option value="2018-19">2018-19</option>
+                <option value="2017-18">2017-18</option>
+                <option value="2016-17">2016-17</option>
+                <option value="2015-16">2015-16</option>
+                <option value="2014-15">2014-15</option>
+                <option value="2013-14">2013-14</option>
+            </select>
             <button type="submit" class="btn btn-primary">Search</button>
         </form>
+
+
+
     </div>
 </header>
 
@@ -182,10 +236,13 @@
             Total distance: 0.00 km<br>
             Total fuel usage: 0.00 - 0.00 gallons<br>
             Total emissions: 0.00 - 0.00 kg CO2<br>
-            Total team cost: $0.00 - $0.00
+            Total team fuel cost: $0.00 - $0.00
         </div>
         <!-- Marker label for displaying individual miles -->
         <div id="markerLabel" class="marker-label"></div>
+        <footer class="text-center mt-4">
+            <p>Check out my <a href="https://github.com/crowoh/" target="_blank" rel="noopener noreferrer">GitHub</a> for more projects!</p>
+        </footer>
     </div>
 </main>
 
@@ -217,19 +274,20 @@
     var cumulativeDistance = 0;
     var cumulativeFuelUsage = 0;
     var cumulativeEmissions = 0;
-    var cumulativeCost = 0
+    var cumulativeCost = 0;
     var variation = 0.1;
 
     document.getElementById('searchForm').addEventListener('submit', function(e) {
         e.preventDefault();
         var searchQuery = document.getElementById('playerNameInput').value.trim();
+        var selectedSeason = document.getElementById('seasonSelection').value; // Get the selected season
         var isTeamSearch = searchQuery.toLowerCase().includes("team"); // Simple check to distinguish team searches
         var encodedSearchQuery = encodeURIComponent(searchQuery);
         currentSearchId++;
         let searchId = currentSearchId;
         resetMap();
 
-        var apiUrl = isTeamSearch ? `/api/team-travel-data?name=${encodedSearchQuery}` : `/api/player-travel-data?name=${encodedSearchQuery}`;
+        var apiUrl = isTeamSearch ? `/api/team-travel-data?name=${encodedSearchQuery}&season=${selectedSeason}` : `/api/player-travel-data?name=${encodedSearchQuery}&season=${selectedSeason}`;
 
 
         fetch(apiUrl)
@@ -288,7 +346,7 @@
         Total distance: 0.00 km<br>
         Total fuel usage: 0.00 - 0.00 gallons<br>
         Total emissions: 0.00 - 0.00 kg CO2<br>
-        Total team cost: $0.00 - $0.00
+        Total team fuel cost: $0.00 - $0.00
     `;
 
         // Reset global cumulative metrics if they exist in your script
@@ -345,7 +403,7 @@
                 Total distance: ${cumulativeDistance.toFixed(2)} km<br>
                 Total fuel usage: ${fuelUsageRangeLow.toFixed(2)} - ${fuelUsageRangeHigh.toFixed(2)} gallons<br>
                 Total emissions: ${emissionsRangeLow.toFixed(2)} - ${emissionsRangeHigh.toFixed(2)} kg CO2<br>
-                Total fuel cost: $${costRangeLow.toFixed(2)} - $${costRangeHigh.toFixed(2)}
+                Total team fuel cost: $${costRangeLow.toFixed(2)} - $${costRangeHigh.toFixed(2)}
             `;
                 }
 
@@ -464,7 +522,7 @@
                 icon: L.divIcon({
                     className: 'custom-icon-start',
                     html: `<i class="fas fa-play"></i>`, // Example using Font Awesome for a play icon
-                    iconSize: [7, 7]
+                    iconSize: [8, 8]
                 })
             }).addTo(map);
             allMarkers.push(startMarker); // Add to the array for easy reset
@@ -474,7 +532,7 @@
             icon: L.divIcon({
                 className: 'custom-icon-end',
                 html: `<i class="fas fa-flag-checkered"></i>`,
-                iconSize: [7, 7]
+                iconSize: [8, 8]
             })
         }).addTo(map);
         allMarkers.push(endMarker); // Add to the array for easy reset

@@ -149,28 +149,30 @@ def travel_data_to_json(game_logs_df, home_team_abbreviation):
     return calculate_distance(game_logs_df, home_team_abbreviation, return_road_trips=True)
 
 
-def find_team_abbreviation_for_player(player_id):
+def find_team_abbreviation_for_player(player_id, season):
     """
-    Fetch the team abbreviation for a given player ID.
+    Infer the team abbreviation for a given player ID for a specific season
+    by analyzing game logs.
 
     Parameters:
     - player_id (str): The NBA API player ID.
+    - season (str): The NBA season in 'YYYY-YY' format.
 
     Returns:
-    - str: The team abbreviation (e.g., 'GSW' for Golden State Warriors).
+    - str: The team abbreviation for the specified season, or None if unable to determine.
     """
-    # Fetch player info
-    player_info = commonplayerinfo.CommonPlayerInfo(player_id=player_id).get_normalized_dict()
+    try:
+        # Fetch player game logs for the specified season
+        game_logs = playergamelog.PlayerGameLog(player_id=player_id, season=season).get_data_frames()[0]
 
-    # Extract the team ID from player info
-    team_id = player_info['CommonPlayerInfo'][0]['TEAM_ID']
+        if game_logs.empty:
+            print(f"No game logs found for player ID {player_id} in season {season}")
+            return None
 
-    # Fetch all NBA teams
-    all_teams = teams.get_teams()
-
-    # Find the team by ID and return its abbreviation
-    team = next((team for team in all_teams if team['id'] == team_id), None)
-    if team:
-        return team['abbreviation']
-
-    return None
+        # Extract the team abbreviation from the first game log's MATCHUP field
+        first_game_matchup = game_logs.iloc[0]['MATCHUP']
+        team_abbreviation = first_game_matchup.split(" ")[0]
+        return team_abbreviation
+    except Exception as e:
+        print(f"Error determining team abbreviation for player ID {player_id}, season {season}: {e}")
+        return None
