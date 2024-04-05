@@ -9,7 +9,7 @@
     <link href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" rel="stylesheet" />
     <style>
         body {
-            font-family: 'Roboto', sans-serif;
+            font-family: 'Courier New', monospace;
             background: linear-gradient(135deg, #1e1e1e 0%, #212121 100%);
             color: #fff;
             margin: 0;
@@ -27,6 +27,7 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         header h1 {
+            font-family: 'Andale Mono', monospace;
             font-size: 2rem;
             font-weight: 700;
             margin-bottom: 0.5rem;
@@ -42,10 +43,15 @@
         }
         #searchForm {
             display: flex;
+            position: relative;
             justify-content: center;
             flex-wrap: wrap;
             gap: 10px;
             margin-top: 1rem;
+            background: rgba(255, 255, 255, 0.1); /* Added translucent background */
+            padding: 20px; /* Added padding */
+            border-radius: 15px; /* Added border radius */
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); /* Added box shadow for depth */
         }
         #playerNameInput {
             flex-grow: 2;
@@ -53,18 +59,24 @@
             border-radius: 25px;
             border: 1px solid #999;
             padding: 0.7rem;
+            background: rgba(255, 255, 255, 0.05); /* Lighter background for inputs */
+            color: #eee; /* Color adjustment for better readability */
         }
-        #seasonSelection {
-            flex-grow: 1;
-            flex-basis: 20%;
+        #playerNameInput, #seasonSelection {
+            flex-grow: 2;
+            flex-basis: calc(60% - 20px);
             border-radius: 25px;
+            border: 1px solid #999;
             padding: 0.7rem;
+            background: rgba(255, 255, 255, 0.05); /* Lighter background for inputs */
+            color: #eee; /* Color adjustment for better readability */
         }
+
         #searchForm button {
             flex-basis: content;
             border-radius: 25px;
             border: 1px solid #000000;
-            background: linear-gradient(135deg, #940000 0%, #7c241c 100%);
+            background: rgba(255, 255, 255, 0.1);;
             color: white;
             padding: 0.7rem 1.5rem;
             cursor: pointer;
@@ -85,9 +97,10 @@
             margin-bottom: 1rem;
         }
         #totalMiles {
+            font-family: 'Helvetica Neue', sans-serif;
             text-align: center;
             font-size: 1.4rem;
-            margin-bottom: 1rem;
+            margin-bottom: 0.7rem;
         }
         .marker-label {
             position: absolute;
@@ -144,6 +157,153 @@
         footer a:hover {
             text-decoration: underline;
         }
+        .theme-switch-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        .theme-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px; /* Adjusted for compactness */
+            height: 24px; /* Adjusted for compactness */
+        }
+
+        .theme-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: transparent; /* Make the slider background transparent */
+            transition: .4s;
+            border-radius: 24px; /* Keep rounded edges */
+            border: 2px solid #fff; /* White border for visibility */
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px; /* Size of the sliding button */
+            width: 20px; /* Size of the sliding button */
+            margin: auto; /* Centers the button within the slider */
+            top: 0;
+            bottom: 0;
+            left: 0; /* Positioned to the left when unchecked */
+            background-color: #fff; /* Slider button color */
+            transition: .4s;        }
+        .theme-switch-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        .theme-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px; /* Adjusted for compactness */
+            height: 24px; /* Adjusted for compactness */
+        }
+
+        .theme-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: transparent; /* Make the slider background transparent */
+            transition: .4s;
+            border-radius: 24px; /* Keep rounded edges */
+            border: 2px solid #fff; /* White border for visibility */
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px; /* Size of the sliding button */
+            width: 20px; /* Size of the sliding button */
+            margin: auto; /* Centers the button within the slider */
+            top: 0;
+            bottom: 0;
+            left: 0; /* Positioned to the left when unchecked */
+            background-color: #fff; /* Slider button color */
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px); /* Adjust if the switch size changes */
+        }
+
+        /* Optional: Adjust the style for the checked state if you want a different border color or effect */
+        input:checked + .slider {
+            border-color: #4CAF50; /* Example: Change border color when activated */
+        }
+
+        input:focus + .slider {
+            box-shadow: 0 0 1px #2196F3;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .slider.round {
+            border-radius: 34px;
+        }
+
+        .slider.round:before {
+            border-radius: 50%;
+        }
+
+
+        border-radius: 50%;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px); /* Adjust if the switch size changes */
+        }
+
+        /* Optional: Adjust the style for the checked state if you want a different border color or effect */
+        input:checked + .slider {
+            border-color: #4CAF50; /* Example: Change border color when activated */
+        }
+
+        input:focus + .slider {
+            box-shadow: 0 0 1px #2196F3;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .slider.round {
+            border-radius: 34px;
+        }
+
+        .slider.round:before {
+            border-radius: 50%;
+        }
+
 
 
 
@@ -223,9 +383,14 @@
             </select>
             <button type="submit" class="btn btn-primary">Search</button>
         </form>
-
-
-
+        <!-- Toggle Switch for Dark Mode -->
+        <div class="theme-switch-wrapper">
+            <label class="theme-switch" for="darkModeToggle"> <!-- Corrected 'for' attribute to match input id -->
+                <input type="checkbox" id="darkModeToggle" />
+                <div class="slider round"></div>
+            </label>
+            <em>Enable Dark Mode</em>
+        </div>
     </div>
 </header>
 
@@ -250,12 +415,34 @@
 <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script src="https://unpkg.com/leaflet-polylinesnakeanim/Leaflet.Polyline.SnakeAnim.js"></script>
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-providers@latest/leaflet-providers.js"></script>
 <script>
     var map = L.map('map').setView([37.0902, -95.7129], 4);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+
+    // Default Tile Layer
+    var defaultLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
+
+    // Dark Mode Tile Layer (initially not added to the map)
+    var darkLayer = L.tileLayer.provider('Stadia.AlidadeSmoothDark', {
+        maxZoom: 19,
+        attribution: 'Map tiles by Stadia Maps, under ODbL.'
+    });
+
+    // Listen for the toggle switch change event to switch tile layers
+    document.getElementById('darkModeToggle').addEventListener('change', function(e) {
+        if (this.checked) {
+            map.removeLayer(defaultLayer);
+            darkLayer.addTo(map);
+        } else {
+            map.removeLayer(darkLayer);
+            defaultLayer.addTo(map);
+        }
+    });
+
 
     var planeIcon = L.icon({
         iconUrl: '/static/img/plane.png',
