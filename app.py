@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request, render_template
 import pandas as pd
-from nba_api.stats.static import players
+from nba_api.stats.static import players, teams
 from nba_api.stats.endpoints import commonplayerinfo
 from data_processor import fetch_game_logs, travel_data_to_json, find_team_abbreviation_for_player
 
@@ -18,8 +18,8 @@ def home():
 @app.route('/api/player-travel-data')
 def get_player_travel_data():
     player_name = request.args.get('name')
-    season = request.args.get('season', '2023-24')  # Use a default season if none is specified
-    playoffs_only = request.args.get('playoffsOnly', 'false').lower() == 'true'
+    season = request.args.get('season', '2023-24')  # Updated default season to current
+    playoffs_only = request.args.get('playoffsOnly', 'false').lower() == 'true'  # Capture playoffsOnly parameter
 
     if not player_name:
         return jsonify({"error": "Player name is required."}), 400
@@ -30,7 +30,7 @@ def get_player_travel_data():
 
     # Determine the type of season data to fetch
     season_type = 'Playoffs' if playoffs_only else 'Regular Season'
-    game_logs_df = fetch_game_logs('player', player_id, season, season_type)
+    game_logs_df = fetch_game_logs('player', player_id, season, season_type)  # Correctly pass season_type
     home_team_abbreviation = find_team_abbreviation_for_player(player_id, season)
 
     if not home_team_abbreviation:

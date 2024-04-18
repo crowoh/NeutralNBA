@@ -1,7 +1,7 @@
 <body>
     <header class="bg-primary">
         <div class="container">
-            <img src="static/img/icon.png" alt="Logo" style="max-width: 100px; margin-bottom: 10px;"> <!-- Logo -->
+            <img src="static/img/icon.png" alt="Logo" style="max-width: 100px; margin-bottom: 10px;">
             <h1>NBA Team Travel Visualization</h1>
             <p>Explore the travel routes and environmental impact of NBA players.</p>
             <form id="searchForm" class="d-flex">
@@ -21,7 +21,6 @@
                 </select>
                 <button type="submit" class="btn btn-primary">Search</button>
             </form>
-            <!-- Toggle Switch for Dark Mode -->
             <div class="toggle-switches-container d-flex align-items-center justify-content-center">
                 <!-- Dark Mode Toggle -->
                 <div class="theme-switch-wrapper">
@@ -31,8 +30,8 @@
                     </label>
                     <em>Enable Dark Mode</em>
                 </div>
-    
-                <!-- Show Only Losses Toggle -->
+
+                <!-- Show Only Playoffs Toggle -->
                 <div class="theme-switch-wrapper">
                     <label class="theme-switch" for="playoffsOnlyToggle">
                         <input type="checkbox" id="playoffsOnlyToggle" />
@@ -43,7 +42,7 @@
             </div>
         </div>
     </header>
-    
+
     <main>
         <div class="container map-container">
             <div id="map"></div>
@@ -60,7 +59,8 @@
             </footer>
         </div>
     </main>
-    
+
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
@@ -93,7 +93,6 @@
             }
         });
     
-    
         var planeIcon = L.icon({
             iconUrl: '/static/img/plane.png',
             iconSize: [32, 32],
@@ -119,17 +118,17 @@
             resetMap();  // Reset the map at the start of a new search
             currentSearchId++;  // Increment the search ID with each search
             var searchId = currentSearchId;  // Local copy to capture in closure for later callbacks
-    
+
             var playerName = document.getElementById('playerNameInput').value.trim();
             var selectedSeason = document.getElementById('seasonSelection').value;
             var playoffsOnly = document.getElementById('playoffsOnlyToggle').checked; // Use the updated checkbox ID
             var isTeamSearch = playerName.toLowerCase().includes("team"); // Check to determine the type of search
-    
+
             // Build the API URL dynamically based on whether it's a team search or player search
             var apiUrl = isTeamSearch ?
                 `/api/team-travel-data?name=${encodeURIComponent(playerName)}&season=${selectedSeason}&playoffsOnly=${playoffsOnly}` :
                 `/api/player-travel-data?name=${encodeURIComponent(playerName)}&season=${selectedSeason}&playoffsOnly=${playoffsOnly}`;
-    
+
             fetch(apiUrl)
                 .then(response => {
                     if (!response.ok) {
@@ -137,8 +136,10 @@
                     }
                     return response.json();
                 })
+    
+    
                 .then(travelData => {
-                    if (searchId !== currentSearchId) return;  // Ensure this response matches the current search
+                    if (searchId !== currentSearchId) return;
                     if (travelData.length === 0) {
                         throw new Error('No travel data available for this search');
                     }
@@ -146,7 +147,7 @@
                     let totalDistance = 0;
                     travelData.forEach((segment, index) => {
                         setTimeout(() => {
-                            if (searchId !== currentSearchId) return;  // Check again before processing each segment
+                            if (searchId !== currentSearchId) return;
                             totalDistance += segment.distance || 0;
                             if (!planeMarker) {
                                 planeMarker = L.marker(segment.start.coords, { icon: planeIcon }).addTo(map);
@@ -156,9 +157,10 @@
                             let polyline = L.polyline([segment.start.coords, segment.end.coords], { color: 'blue' }).addTo(map);
                             polylineLayers.push(polyline);
                             animateMovement(segment.start.coords, segment.end.coords, totalDistance);
-                            addDistanceMarker(segment.start.coords, segment.end.coords, segment);
+                            addDistanceMarker(segment.start.coords, segment.end.coords, segment); // Modified to pass the entire segment
                         }, index * 2000);
                     });
+    
                 })
                 .catch(error => {
                     console.error(error);
@@ -195,64 +197,81 @@
     
     
     
-        function animateMovement(start, end, segmentDistance, callback) {
+        function animateMovement(start, end, segmentDistance) {
             var startTime = performance.now();
-            var duration = 2000; // Set animation duration to 2 seconds
+            var cumulativeDistance = 0; // Reset cumulative distance for each animation segment
+            var lastPosition = start; // Store the last position to check for movement
     
             function animate(now) {
                 var elapsedTime = now - startTime;
-                var t = Math.min(1, elapsedTime / duration); // Calculate interpolation parameter
+                var duration = 2000; // Duration of the animation
+    
+                var t = Math.min(1, elapsedTime / duration);
                 var nextPos = [start[0] + t * (end[0] - start[0]), start[1] + t * (end[1] - start[1])];
-                planeMarker.setLatLng(nextPos); // Update the plane's position
+                planeMarker.setLatLng(nextPos);
     
                 if (t < 1) {
-                    window.requestAnimationFrame(animate); // Continue animation until t reaches 1
+                    window.requestAnimationFrame(animate);
                 } else {
-                    setTimeout(() => {
-                        updateMetrics(segmentDistance); // Update metrics once the destination is reached
-                        callback(); // Only call the callback after the pause
-                    }, 2000); // Pause at the destination for 2 seconds before proceeding
+                    // Check if there is any movement
+                    if (nextPos[0] !== lastPosition[0] || nextPos[1] !== lastPosition[1]) {
+                        // Ensure segmentDistance is treated as a number and properly accumulated
+                        var distance = parseFloat(segmentDistance) || 0;
+                        cumulativeDistance += distance;
+    
+                        var segmentFuelUsage = distance * AVG_FUEL_CONSUMPTION_PER_KM;
+                        cumulativeFuelUsage += segmentFuelUsage;
+    
+                        var segmentEmissions = segmentFuelUsage * KG_CO2_PER_GALLON_JET_FUEL;
+                        cumulativeEmissions += segmentEmissions;
+    
+                        var segmentCost = segmentFuelUsage * COST_PER_GALLON_JET_FUEL;
+                        cumulativeCost += segmentCost;
+    
+                        // Calculate ranges
+                        var variation = 0.1; // 10% variation for ranges
+                        var emissionsRangeLow = cumulativeEmissions * (1 - variation);
+                        var emissionsRangeHigh = cumulativeEmissions * (1 + variation);
+                        var fuelUsageRangeLow = cumulativeFuelUsage * (1 - variation);
+                        var fuelUsageRangeHigh = cumulativeFuelUsage * (1 + variation);
+                        var costRangeLow = cumulativeCost * (1 - variation);
+                        var costRangeHigh = cumulativeCost * (1 + variation);
+    
+                        // Update the display with calculated ranges
+                        document.getElementById('totalMiles').innerHTML = `
+                    Total distance: ${cumulativeDistance.toFixed(2)} km<br>
+                    Total fuel usage: ${fuelUsageRangeLow.toFixed(2)} - ${fuelUsageRangeHigh.toFixed(2)} gallons<br>
+                    Total emissions: ${emissionsRangeLow.toFixed(2)} - ${emissionsRangeHigh.toFixed(2)} kg CO2<br>
+                    Total team fuel cost: $${costRangeLow.toFixed(2)} - $${costRangeHigh.toFixed(2)}
+                `;
+                    }
+    
+                    // Update last position
+                    lastPosition = nextPos;
                 }
             }
     
             window.requestAnimationFrame(animate);
         }
-        function updateMetrics(segmentDistance) {
-            var distance = parseFloat(segmentDistance) || 0;
-            cumulativeDistance += distance;
-            var segmentFuelUsage = distance * AVG_FUEL_CONSUMPTION_PER_KM;
-            cumulativeFuelUsage += segmentFuelUsage;
-            var segmentEmissions = segmentFuelUsage * KG_CO2_PER_GALLON_JET_FUEL;
-            cumulativeEmissions += segmentEmissions;
-            var segmentCost = segmentFuelUsage * COST_PER_GALLON_JET_FUEL;
-            cumulativeCost += segmentCost;
-    
-            document.getElementById('totalMiles').innerHTML = `
-                Total distance: ${cumulativeDistance.toFixed(2)} km<br>
-                Total fuel usage: ${(cumulativeFuelUsage * 0.9).toFixed(2)} - ${(cumulativeFuelUsage * 1.1).toFixed(2)} gallons<br>
-                Total emissions: ${(cumulativeEmissions * 0.9).toFixed(2)} - ${(cumulativeEmissions * 1.1).toFixed(2)} kg CO2<br>
-                Total team fuel cost: $${(cumulativeCost * 0.9).toFixed(2)} - $${(cumulativeCost * 1.1).toFixed(2)}
-            `;
-        }
-    
-    
     
         function handleTravelData(travelData, index) {
             if (index >= travelData.length) return; // End recursion when all segments are processed
     
             const segment = travelData[index];
-            setTimeout(() => {
-                if (segment.type === "home") {
-                    displayHomeGame(segment, () => {
-                        handleTravelData(travelData, index + 1);
-                    });
-                } else {
-                    displayAwayGame(segment, () => {
-                        handleTravelData(travelData, index + 1);
-                    });
-                }
-            }, index * 2000);
+            if (segment.type === "home") {
+                displayHomeGame(segment, () => {
+                    // Proceed after a pause for home games
+                    setTimeout(() => handleTravelData(travelData, index + 1), 500); // Short pause for home games
+                });
+            } else {
+                // For travel segments, animate and then proceed
+                animateMovement(segment.start.coords, segment.end.coords, segment.distance, () => {
+                    setTimeout(() => handleTravelData(travelData, index + 1), 2000); // Longer pause for travel animation
+                });
+            }
         }
+    
+    
     
     
         function displayHomeGame(segment, callback) {
@@ -264,29 +283,11 @@
             }
             planeMarker.bindPopup(popupContent, {autoClose: true}).openPopup();
     
-        // Close the popup after a brief pause
+            // Close the popup after a brief pause
             setTimeout(() => {
                 planeMarker.closePopup();
                 callback(); // Continue processing after the popup has been shown and closed
             }, 200); // This delay mimics the pause duration for home games
-        }
-    
-        function displayAwayGame(segment, callback) {
-            animateMovement(segment.start.coords, segment.end.coords, segment.distance, () => {
-                if (!planeMarker) {
-                    planeMarker = L.marker(segment.end.coords, {icon: planeIcon}).addTo(map);
-                } else {
-                    planeMarker.setLatLng(segment.end.coords);
-                }
-                let popupContent = `Away Game on ${segment.date}: ${segment.matchup}`;
-                planeMarker.bindPopup(popupContent, {autoClose: true}).openPopup();
-    
-            // Close the popup after a brief pause, then execute callback
-                setTimeout(() => {
-                    planeMarker.closePopup();
-                    callback(); // Continue processing after the popup has been shown and closed
-                }, 2000); // Longer delay to allow reading the popup
-            });
         }
     
     
@@ -325,7 +326,7 @@
                 let emissionsRange = `${(emissions * (1 - variation)).toFixed(2)} - ${(emissions * (1 + variation)).toFixed(2)}`;
                 let costRange = `${(cost * (1 - variation)).toFixed(2)} - ${(cost * (1 + variation)).toFixed(2)}`;
     
-                let midPoint = L.latLngBounds(start, end).getCenter;
+                let midPoint = L.latLngBounds(start, end).getCenter();
                 let popupContent = `
             <div class="custom-popup">
                 <h4>Travel Details</h4>
@@ -380,4 +381,3 @@
     </script>
     </body>
     </html>
-    
