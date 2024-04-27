@@ -30,7 +30,7 @@
                     </label>
                     <em>Enable Dark Mode</em>
                 </div>
-
+    
                 <!-- Show Only Playoffs Toggle -->
                 <div class="theme-switch-wrapper">
                     <label class="theme-switch" for="playoffsOnlyToggle">
@@ -39,10 +39,20 @@
                     </label>
                     <em>Show Only Playoffs</em>
                 </div>
+    
+                <div class="theme-switch-wrapper">
+                    <label class="theme-switch" for="removeTravelInfoToggle">
+                        <input type="checkbox" id="removeTravelInfoToggle" />
+                        <div class="slider round"></div>
+                    </label>
+                    <em>Remove Travel Information</em>
+                </div>
+    
+    
             </div>
         </div>
     </header>
-
+    
     <main>
         <div class="container map-container">
             <div id="map"></div>
@@ -59,8 +69,8 @@
             </footer>
         </div>
     </main>
-
-
+    
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
@@ -73,7 +83,7 @@
         // Default Tile Layer
         var defaultLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
+            attribution: 'Â© OpenStreetMap contributors'
         }).addTo(map);
     
         // Dark Mode Tile Layer (initially not added to the map)
@@ -81,6 +91,20 @@
             maxZoom: 19,
             attribution: 'Map tiles by Stadia Maps, under ODbL.'
         });
+    
+        document.getElementById('removeTravelInfoToggle').addEventListener('change', function() {
+            // Toggle the display of travel information
+            var displayStatus = this.checked ? 'none' : 'block';
+    
+            // Loop through all markers and adjust their visibility based on the checkbox
+            allMarkers.forEach(marker => {
+                var markerElement = marker.getElement();
+                if (markerElement) {
+                    markerElement.style.display = displayStatus;
+                }
+            });
+        });
+    
     
         // Listen for the toggle switch change event to switch tile layers
         document.getElementById('darkModeToggle').addEventListener('change', function(e) {
@@ -118,17 +142,17 @@
             resetMap();  // Reset the map at the start of a new search
             currentSearchId++;  // Increment the search ID with each search
             var searchId = currentSearchId;  // Local copy to capture in closure for later callbacks
-
+    
             var playerName = document.getElementById('playerNameInput').value.trim();
             var selectedSeason = document.getElementById('seasonSelection').value;
             var playoffsOnly = document.getElementById('playoffsOnlyToggle').checked; // Use the updated checkbox ID
             var isTeamSearch = playerName.toLowerCase().includes("team"); // Check to determine the type of search
-
+    
             // Build the API URL dynamically based on whether it's a team search or player search
             var apiUrl = isTeamSearch ?
                 `/api/team-travel-data?name=${encodeURIComponent(playerName)}&season=${selectedSeason}&playoffsOnly=${playoffsOnly}` :
                 `/api/player-travel-data?name=${encodeURIComponent(playerName)}&season=${selectedSeason}&playoffsOnly=${playoffsOnly}`;
-
+    
             fetch(apiUrl)
                 .then(response => {
                     if (!response.ok) {
@@ -182,11 +206,11 @@
     
             // Reset displayed metrics
             document.getElementById('totalMiles').innerHTML = `
-            Total distance: 0.00 km<br>
-            Total fuel usage: 0.00 - 0.00 gallons<br>
-            Total emissions: 0.00 - 0.00 kg CO2<br>
-            Total team fuel cost: $0.00 - $0.00
-        `;
+                Total distance: 0.00 km<br>
+                Total fuel usage: 0.00 - 0.00 gallons<br>
+                Total emissions: 0.00 - 0.00 kg CO2<br>
+                Total team fuel cost: $0.00 - $0.00
+            `;
     
             // Reset global cumulative metrics if they exist in your script
             cumulativeDistance = 0;
@@ -239,11 +263,11 @@
     
                         // Update the display with calculated ranges
                         document.getElementById('totalMiles').innerHTML = `
-                    Total distance: ${cumulativeDistance.toFixed(2)} km<br>
-                    Total fuel usage: ${fuelUsageRangeLow.toFixed(2)} - ${fuelUsageRangeHigh.toFixed(2)} gallons<br>
-                    Total emissions: ${emissionsRangeLow.toFixed(2)} - ${emissionsRangeHigh.toFixed(2)} kg CO2<br>
-                    Total team fuel cost: $${costRangeLow.toFixed(2)} - $${costRangeHigh.toFixed(2)}
-                `;
+                        Total distance: ${cumulativeDistance.toFixed(2)} km<br>
+                        Total fuel usage: ${fuelUsageRangeLow.toFixed(2)} - ${fuelUsageRangeHigh.toFixed(2)} gallons<br>
+                        Total emissions: ${emissionsRangeLow.toFixed(2)} - ${emissionsRangeHigh.toFixed(2)} kg CO2<br>
+                        Total team fuel cost: $${costRangeLow.toFixed(2)} - $${costRangeHigh.toFixed(2)}
+                    `;
                     }
     
                     // Update last position
@@ -292,92 +316,101 @@
     
     
         function addDistanceMarker(start, end, segment) {
-            // Handle home games with a temporary popup
-            if (segment.type === "home") {
-                let popupContentHome = `
-            <div class="custom-popup-home">
-                <h4>Home Game</h4>
-                <p>Matchup: ${segment.matchup}</p>
-                <p>Date: ${segment.date}</p>
-                <p>No travel required</p>
-            </div>
-        `;
+            // Always add markers, but control visibility based on the toggle state.
+            let showMarkers = !document.getElementById('removeTravelInfoToggle').checked;
     
+            if (segment.type === "home" && showMarkers) {
+                let popupContentHome = `
+                <div class="custom-popup-home">
+                    <h4>Home Game</h4>
+                    <p>Matchup: ${segment.matchup}</p>
+                    <p>Date: ${segment.date}</p>
+                    <p>No travel required</p>
+                </div>
+            `;
                 L.popup({
                     className: 'home-game-popup',
                     autoClose: true,
                     closeOnClick: true,
                     maxWidth: 250
                 })
-                    .setLatLng(end) // Use 'end' as the home arena coordinates
+                    .setLatLng(end)
                     .setContent(popupContentHome)
                     .openOn(map);
             }
     
             if (segment.distance > 0) {
-                // Calculate detailed metrics for the segment
-                let fuelUsage = segment.distance * AVG_FUEL_CONSUMPTION_PER_KM;
-                let emissions = fuelUsage * KG_CO2_PER_GALLON_JET_FUEL;
-                let cost = fuelUsage * COST_PER_GALLON_JET_FUEL;
-    
-                // Calculate ranges with a 10% variation for a more dynamic presentation
-                let variation = 0.1;
-                let fuelUsageRange = `${(fuelUsage * (1 - variation)).toFixed(2)} - ${(fuelUsage * (1 + variation)).toFixed(2)}`;
-                let emissionsRange = `${(emissions * (1 - variation)).toFixed(2)} - ${(emissions * (1 + variation)).toFixed(2)}`;
-                let costRange = `${(cost * (1 - variation)).toFixed(2)} - ${(cost * (1 + variation)).toFixed(2)}`;
-    
                 let midPoint = L.latLngBounds(start, end).getCenter();
-                let popupContent = `
+                let distanceMarker = createDistanceMarker(midPoint, segment, showMarkers);
+                allMarkers.push(distanceMarker); // Add to the global array for later control.
+            }
+    
+            // Ensure start and end markers are placed for visual clarity and manage their visibility directly.
+            let startMarker = createVisibilityManagedMarker(start, 'custom-icon-start', '<i class="fas fa-play"></i>');
+            allMarkers.push(startMarker);
+    
+            let endMarker = createVisibilityManagedMarker(end, 'custom-icon-end', '<i class="fas fa-flag-checkered"></i>');
+            allMarkers.push(endMarker);
+    
+        }
+    
+        function createDistanceMarker(midPoint, segment, isVisible) {
+            let fuelUsage = segment.distance * AVG_FUEL_CONSUMPTION_PER_KM;
+            let emissions = fuelUsage * KG_CO2_PER_GALLON_JET_FUEL;
+            let cost = fuelUsage * COST_PER_GALLON_JET_FUEL;
+            let variation = 0.1;
+            let popupContent = `
             <div class="custom-popup">
                 <h4>Travel Details</h4>
                 <p>Matchup: ${segment.matchup}</p>
                 <p>Date: ${segment.date}</p>
                 <p>Distance: ${segment.distance.toFixed(2)} km</p>
-                <p>Fuel Usage: ${fuelUsageRange} gallons</p>
-                <p>Emissions: ${emissionsRange} kg CO2</p>
-                <p>Cost: $${costRange}</p>
+                <p>Fuel Usage: ${(fuelUsage * (1 - variation)).toFixed(2)} - ${(fuelUsage * (1 + variation)).toFixed(2)} gallons</p>
+                <p>Emissions: ${(emissions * (1 - variation)).toFixed(2)} - ${(emissions * (1 + variation)).toFixed(2)} kg CO2</p>
+                <p>Cost: $${(cost * (1 - variation)).toFixed(2)} - $${(cost * (1 + variation)).toFixed(2)}</p>
             </div>
         `;
-    
-                // Custom icon for distance marker
-                let distanceIconHtml = `
-            <div class="distance-icon-overlay">${segment.distance.toFixed(2)} km</div>
-        `;
-    
-                // Place a distance marker at the midpoint for travel segments
-                let distanceMarker = L.marker(midPoint, {
-                    icon: L.divIcon({
-                        className: 'custom-icon-distance',
-                        html: distanceIconHtml, // Using the distanceIconHtml variable
-                        iconSize: L.point(0, 0) // Adjust the size as necessary for better visibility
-                    })
-                })
-                    .addTo(map)
-                    .bindPopup(popupContent);
-                allMarkers.push(distanceMarker); // Add to the array for easy reset
-            }
-                // Ensure start and end markers are placed for visual clarity
-                let startMarker = L.marker(start, {
-                    icon: L.divIcon({
-                        className: 'custom-icon-start',
-                        html: `<i class="fas fa-play"></i>`, // Example using Font Awesome for a play icon
-                        iconSize: [8, 8]
-                    })
-                }).addTo(map);
-                allMarkers.push(startMarker); // Add to the array for easy reset
-    
-    
-            let endMarker = L.marker(end, {
+            let distanceIconHtml = `<div class="distance-icon-overlay">${segment.distance.toFixed(2)} km</div>`;
+            let marker = L.marker(midPoint, {
                 icon: L.divIcon({
-                    className: 'custom-icon-end',
-                    html: `<i class="fas fa-flag-checkered"></i>`,
-                    iconSize: [8, 8]
+                    className: 'custom-icon-distance',
+                    html: distanceIconHtml,
+                    iconSize: L.point(0, 0)
+                })
+            }).bindPopup(popupContent);
+    
+            if (isVisible) {
+                marker.addTo(map);
+            }
+            return marker;
+        }
+    
+        function createVisibilityManagedMarker(position, className, iconHtml) {
+            let marker = L.marker(position, {
+                icon: L.divIcon({
+                    className: className,
+                    html: `<div class="${className}">${iconHtml}</div>`, // Encapsulate HTML inside a div with the correct class
+                    iconSize: [6, 6] // Adjust the size to match your CSS definitions
                 })
             }).addTo(map);
-            allMarkers.push(endMarker); // Add to the array for easy reset
-    
-    
+            allMarkers.push(marker); // Add to the array for easy reset
+            return marker;
         }
+        // Toggle visibility function to be called on toggle switch change
+        function toggleMarkerVisibility() {
+            let shouldShow = !document.getElementById('removeTravelInfoToggle').checked;
+            allMarkers.forEach(marker => {
+                if (shouldShow) {
+                    marker.addTo(map);
+                } else {
+                    map.removeLayer(marker);
+                }
+            });
+        }
+    
+        // Add event listener to the toggle
+        document.getElementById('removeTravelInfoToggle').addEventListener('change', toggleMarkerVisibility);
+    
     </script>
     </body>
     </html>
