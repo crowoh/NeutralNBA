@@ -1,43 +1,49 @@
 from flask import Flask, jsonify, request, render_template
-import pandas as pd
-from nba_api.stats.static import players, teams
-from nba_api.stats.endpoints import commonplayerinfo
-from data_processor import fetch_game_logs, travel_data_to_json, find_team_abbreviation_for_player
+from api_handler import NBADataHandler  # Import your existing API handler
+from data_processor import travel_data_to_json  # Import the updated data processor
 
 app = Flask(__name__)
-
-def find_player_id(player_name):
-    all_players = players.get_players()
-    player = next((player for player in all_players if player['full_name'].lower() == player_name.lower()), None)
-    return player['id'] if player else None
+handler = NBADataHandler()
 
 @app.route('/')
 def home():
-    return render_template('base.html')
+    return render_template('base.html')  # Render the main page (we'll update base.html as necessary later)
 
 @app.route('/api/player-travel-data')
 def get_player_travel_data():
-    player_name = request.args.get('name')
-    season = request.args.get('season', '2023-24')  # Updated default season to current
-    playoffs_only = request.args.get('playoffsOnly', 'false').lower() == 'true'  # Capture playoffsOnly parameter
+    # Retrieve parameters from the request
+    name = request.args.get('name')
+    season = request.args.get('season', '2023-24')
+    playoffs_only = request.args.get('playoffsOnly', 'false').lower() == 'true'
 
-    if not player_name:
-        return jsonify({"error": "Player name is required."}), 400
+    if not name:
+        return jsonify({"error": "Player or Team name is required."}), 400
 
-    player_id = find_player_id(player_name)
-    if not player_id:
-        return jsonify({"error": "Player not found."}), 404
+    # Determine if it's a player or team search
+    player_info = handler.find_player_by_name(name)
+    team_info = handler.find_team_by_name(name)
 
-    # Determine the type of season data to fetch
-    season_type = 'Playoffs' if playoffs_only else 'Regular Season'
-    game_logs_df = fetch_game_logs('player', player_id, season, season_type)  # Correctly pass season_type
-    home_team_abbreviation = find_team_abbreviation_for_player(player_id, season)
+    # Handle player data if found
+    if player_info:
+        player_id = player_info[0]['id']
+        game_logs = handler.get_player_game_logs(player_id, season)
 
-    if not home_team_abbreviation:
-        return jsonify({"error": "Could not determine player's team."}), 404
+        player_output = travel_data_to_json(game_logs)
 
-    travel_data = travel_data_to_json(game_logs_df, home_team_abbreviation)
-    return jsonify(travel_data)
+        return jsonify(player_output)  # Return the processed JSON data to the frontend
+
+    # Handle team data if found
+    elif team_info:
+        team_id = team_info[0]['id']
+        game_logs = handler.get_team_game_logs(team_id, season)
+
+        team_output = travel_data_to_json(game_logs)
+
+        return jsonify(team_output)  # Return the processed JSON data to the frontend
+
+    else:
+        # Return error if neither player nor team is found
+        return jsonify({"error": "Player or Team not found."}), 404
 
 if __name__ == '__main__':
     app.run(debug=True)

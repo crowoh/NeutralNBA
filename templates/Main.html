@@ -1,12 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
 <body>
-    <header class="bg-primary">
-        <div class="container">
-            <img src="static/img/icon.png" alt="Logo" style="max-width: 100px; margin-bottom: 10px;">
-            <h1>NBA Team Travel Visualization</h1>
-            <p>Explore the travel routes and environmental impact of NBA players.</p>
-            <form id="searchForm" class="d-flex">
-                <input type="text" id="playerNameInput" class="form-control" placeholder="Enter player name" required>
-                <select id="seasonSelection" class="form-control mx-2">
+    <div id="mySidebar" class="sidebar">
+        <h2>NBA Travel Search</h2>
+        <form id="searchForm">
+            <div class="form-group">
+                <label for="playerNameInput">Enter Player/Team Name:</label>
+                <input type="text" id="playerNameInput" class="form-control" placeholder="Enter name" required>
+            </div>
+            <div class="form-group">
+                <label for="seasonSelection">Select Season:</label>
+                <select id="seasonSelection" class="form-control">
                     <option value="2023-24">2023-24</option>
                     <option value="2022-23">2022-23</option>
                     <option value="2021-22">2021-22</option>
@@ -19,95 +23,71 @@
                     <option value="2014-15">2014-15</option>
                     <option value="2013-14">2013-14</option>
                 </select>
-                <button type="submit" class="btn btn-primary">Search</button>
-            </form>
-            <div class="toggle-switches-container d-flex align-items-center justify-content-center">
-                <!-- Dark Mode Toggle -->
-                <div class="theme-switch-wrapper">
-                    <label class="theme-switch" for="darkModeToggle">
-                        <input type="checkbox" id="darkModeToggle" />
-                        <div class="slider round"></div>
-                    </label>
-                    <em>Enable Dark Mode</em>
-                </div>
-    
-                <!-- Show Only Playoffs Toggle -->
-                <div class="theme-switch-wrapper">
-                    <label class="theme-switch" for="playoffsOnlyToggle">
-                        <input type="checkbox" id="playoffsOnlyToggle" />
-                        <div class="slider round"></div>
-                    </label>
-                    <em>Show Only Playoffs</em>
-                </div>
-    
-                <div class="theme-switch-wrapper">
-                    <label class="theme-switch" for="removeTravelInfoToggle">
-                        <input type="checkbox" id="removeTravelInfoToggle" />
-                        <div class="slider round"></div>
-                    </label>
-                    <em>Remove Travel Information</em>
-                </div>
-    
-    
             </div>
+            <button type="submit" class="btn-search">Search</button>
+        </form>
+
+        <div class="theme-switch-wrapper mt-4">
+            <label class="theme-switch" for="darkModeToggle">
+                <input type="checkbox" id="darkModeToggle" />
+                <div class="slider round"></div>
+            </label>
+            <em>Dark Mode</em>
         </div>
-    </header>
-    
-    <main>
-        <div class="container map-container">
-            <div id="map"></div>
-            <div id="totalMiles">
-                Total distance: 0.00 km<br>
-                Total fuel usage: 0.00 - 0.00 gallons<br>
-                Total emissions: 0.00 - 0.00 kg CO2<br>
-                Total team fuel cost: $0.00 - $0.00
-            </div>
-            <!-- Marker label for displaying individual miles -->
-            <div id="markerLabel" class="marker-label"></div>
-            <footer class="text-center mt-4">
-                <p>Check out my <a href="https://github.com/crowoh/" target="_blank" rel="noopener noreferrer">GitHub</a> for more projects!</p>
-            </footer>
+
+        <div class="theme-switch-wrapper mt-3">
+            <label class="theme-switch" for="playoffsOnlyToggle">
+                <input type="checkbox" id="playoffsOnlyToggle" />
+                <div class="slider round"></div>
+            </label>
+            <em>Show Only Playoffs</em>
         </div>
-    </main>
-    
-    
+
+        <div class="theme-switch-wrapper mt-3">
+            <label class="theme-switch" for="removeTravelInfoToggle">
+                <input type="checkbox" id="removeTravelInfoToggle" />
+                <div class="slider round"></div>
+            </label>
+            <em>Toggle Marker Transparency</em>
+        </div>
+
+        <a href="#">About</a>
+    </div>
+
+    <div id="main">
+        <div id="map"></div>
+        <div id="totalMiles">
+            Total distance: 0.00 km<br>
+            Total fuel usage: 0.00 - 0.00 gallons<br>
+            Total emissions: 0.00 - 0.00 kg CO2<br>
+            Total team fuel cost: $0.00 - $0.00
+        </div>
+    </div>
+
+    <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <script src="https://unpkg.com/leaflet-polylinesnakeanim/Leaflet.Polyline.SnakeAnim.js"></script>
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-providers@latest/leaflet-providers.js"></script>
+    <script src="https://unpkg.com/leaflet.animatedmarker@latest/dist/AnimatedMarker.min.js"></script>
+    <script src="https://unpkg.com/leaflet-polylinedecorator@latest/dist/leaflet.polylineDecorator.js"></script>
+
     <script>
         var map = L.map('map').setView([37.0902, -95.7129], 4);
-    
+
         // Default Tile Layer
         var defaultLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: 'Â© OpenStreetMap contributors'
+            maxZoom: 30,
+            attribution: '© OpenStreetMap contributors'
         }).addTo(map);
-    
-        // Dark Mode Tile Layer (initially not added to the map)
+
+        // Dark Mode Tile Layer
         var darkLayer = L.tileLayer.provider('Stadia.AlidadeSmoothDark', {
-            maxZoom: 19,
+            maxZoom: 30,
             attribution: 'Map tiles by Stadia Maps, under ODbL.'
         });
-    
-        document.getElementById('removeTravelInfoToggle').addEventListener('change', function() {
-            // Toggle the display of travel information
-            var displayStatus = this.checked ? 'none' : 'block';
-    
-            // Loop through all markers and adjust their visibility based on the checkbox
-            allMarkers.forEach(marker => {
-                var markerElement = marker.getElement();
-                if (markerElement) {
-                    markerElement.style.display = displayStatus;
-                }
-            });
-        });
-    
-    
-        // Listen for the toggle switch change event to switch tile layers
-        document.getElementById('darkModeToggle').addEventListener('change', function(e) {
+
+        document.getElementById('darkModeToggle').addEventListener('change', function (e) {
             if (this.checked) {
                 map.removeLayer(defaultLayer);
                 darkLayer.addTo(map);
@@ -116,82 +96,52 @@
                 defaultLayer.addTo(map);
             }
         });
-    
+
         var planeIcon = L.icon({
-            iconUrl: '/static/img/plane.png',
+            iconUrl: 'static/img/plane.png',
             iconSize: [32, 32],
             iconAnchor: [16, 16],
             popupAnchor: [0, -16]
         });
-    
+
         var planeMarker = null;
         var polylineLayers = [];
         var allMarkers = [];
         var currentSearchId = 0;
-        var AVG_FUEL_CONSUMPTION_PER_KM = 0.36;
-        var KG_CO2_PER_GALLON_JET_FUEL = 9.57;
-        var COST_PER_GALLON_JET_FUEL = 2.22;
-        var cumulativeDistance = 0;
-        var cumulativeFuelUsage = 0;
-        var cumulativeEmissions = 0;
-        var cumulativeCost = 0;
-        var variation = 0.1;
-    
-        document.getElementById('searchForm').addEventListener('submit', function(e) {
+
+        // Event listener for the search form
+        document.getElementById('searchForm').addEventListener('submit', function (e) {
             e.preventDefault();
             resetMap();  // Reset the map at the start of a new search
-            currentSearchId++;  // Increment the search ID with each search
-            var searchId = currentSearchId;  // Local copy to capture in closure for later callbacks
-    
+
             var playerName = document.getElementById('playerNameInput').value.trim();
             var selectedSeason = document.getElementById('seasonSelection').value;
-            var playoffsOnly = document.getElementById('playoffsOnlyToggle').checked; // Use the updated checkbox ID
-            var isTeamSearch = playerName.toLowerCase().includes("team"); // Check to determine the type of search
-    
-            // Build the API URL dynamically based on whether it's a team search or player search
-            var apiUrl = isTeamSearch ?
-                `/api/team-travel-data?name=${encodeURIComponent(playerName)}&season=${selectedSeason}&playoffsOnly=${playoffsOnly}` :
-                `/api/player-travel-data?name=${encodeURIComponent(playerName)}&season=${selectedSeason}&playoffsOnly=${playoffsOnly}`;
-    
+            var playoffsOnly = document.getElementById('playoffsOnlyToggle').checked;
+
+            var apiUrl = `/api/player-travel-data?name=${encodeURIComponent(playerName)}&season=${selectedSeason}&playoffsOnly=${playoffsOnly}`;
+
             fetch(apiUrl)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`Error: ${response.statusText}`);
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Data received:', data);
+                    if (!data || !data.Games || !Array.isArray(data.Games)) {
+                        throw new Error('Unexpected format or no data');
                     }
-                    return response.json();
-                })
-    
-    
-                .then(travelData => {
-                    if (searchId !== currentSearchId) return;
-                    if (travelData.length === 0) {
+
+                    let games = data.Games;
+                    if (games.length === 0) {
                         throw new Error('No travel data available for this search');
                     }
-    
-                    let totalDistance = 0;
-                    travelData.forEach((segment, index) => {
-                        setTimeout(() => {
-                            if (searchId !== currentSearchId) return;
-                            totalDistance += segment.distance || 0;
-                            if (!planeMarker) {
-                                planeMarker = L.marker(segment.start.coords, { icon: planeIcon }).addTo(map);
-                            } else {
-                                planeMarker.setLatLng(segment.start.coords);
-                            }
-                            let polyline = L.polyline([segment.start.coords, segment.end.coords], { color: 'blue' }).addTo(map);
-                            polylineLayers.push(polyline);
-                            animateMovement(segment.start.coords, segment.end.coords, totalDistance);
-                            addDistanceMarker(segment.start.coords, segment.end.coords, segment); // Modified to pass the entire segment
-                        }, index * 2000);
-                    });
-    
+
+                    // Start animating through the games
+                    handleTravelData(games, 0);
                 })
                 .catch(error => {
                     console.error(error);
                     alert(error.message);
                 });
         });
-    
+
         function resetMap() {
             if (planeMarker) {
                 map.removeLayer(planeMarker);
@@ -199,218 +149,57 @@
             }
             polylineLayers.forEach(layer => map.removeLayer(layer));
             polylineLayers = [];
-    
-            // Remove all markers
-            allMarkers.forEach(marker => map.removeLayer(marker));
-            allMarkers = []; // Reset the array for the next search
-    
-            // Reset displayed metrics
-            document.getElementById('totalMiles').innerHTML = `
-                Total distance: 0.00 km<br>
-                Total fuel usage: 0.00 - 0.00 gallons<br>
-                Total emissions: 0.00 - 0.00 kg CO2<br>
-                Total team fuel cost: $0.00 - $0.00
-            `;
-    
-            // Reset global cumulative metrics if they exist in your script
-            cumulativeDistance = 0;
-            cumulativeFuelUsage = 0;
-            cumulativeEmissions = 0;
-            cumulativeCost = 0;
         }
-    
-    
-    
-        function animateMovement(start, end, segmentDistance) {
+
+        function animateMovement(start, end, callback) {
             var startTime = performance.now();
-            var cumulativeDistance = 0; // Reset cumulative distance for each animation segment
-            var lastPosition = start; // Store the last position to check for movement
-    
+            var duration = 2000; // Duration of the animation (2 seconds)
+            
             function animate(now) {
                 var elapsedTime = now - startTime;
-                var duration = 2000; // Duration of the animation
-    
-                var t = Math.min(1, elapsedTime / duration);
-                var nextPos = [start[0] + t * (end[0] - start[0]), start[1] + t * (end[1] - start[1])];
+                var t = Math.min(1, elapsedTime / duration); // Progress ratio (0 to 1)
+                
+                // Calculate the next position based on the progress
+                var nextPos = [
+                    start[0] + t * (end[0] - start[0]),
+                    start[1] + t * (end[1] - start[1])
+                ];
                 planeMarker.setLatLng(nextPos);
-    
+
                 if (t < 1) {
                     window.requestAnimationFrame(animate);
                 } else {
-                    // Check if there is any movement
-                    if (nextPos[0] !== lastPosition[0] || nextPos[1] !== lastPosition[1]) {
-                        // Ensure segmentDistance is treated as a number and properly accumulated
-                        var distance = parseFloat(segmentDistance) || 0;
-                        cumulativeDistance += distance;
-    
-                        var segmentFuelUsage = distance * AVG_FUEL_CONSUMPTION_PER_KM;
-                        cumulativeFuelUsage += segmentFuelUsage;
-    
-                        var segmentEmissions = segmentFuelUsage * KG_CO2_PER_GALLON_JET_FUEL;
-                        cumulativeEmissions += segmentEmissions;
-    
-                        var segmentCost = segmentFuelUsage * COST_PER_GALLON_JET_FUEL;
-                        cumulativeCost += segmentCost;
-    
-                        // Calculate ranges
-                        var variation = 0.1; // 10% variation for ranges
-                        var emissionsRangeLow = cumulativeEmissions * (1 - variation);
-                        var emissionsRangeHigh = cumulativeEmissions * (1 + variation);
-                        var fuelUsageRangeLow = cumulativeFuelUsage * (1 - variation);
-                        var fuelUsageRangeHigh = cumulativeFuelUsage * (1 + variation);
-                        var costRangeLow = cumulativeCost * (1 - variation);
-                        var costRangeHigh = cumulativeCost * (1 + variation);
-    
-                        // Update the display with calculated ranges
-                        document.getElementById('totalMiles').innerHTML = `
-                        Total distance: ${cumulativeDistance.toFixed(2)} km<br>
-                        Total fuel usage: ${fuelUsageRangeLow.toFixed(2)} - ${fuelUsageRangeHigh.toFixed(2)} gallons<br>
-                        Total emissions: ${emissionsRangeLow.toFixed(2)} - ${emissionsRangeHigh.toFixed(2)} kg CO2<br>
-                        Total team fuel cost: $${costRangeLow.toFixed(2)} - $${costRangeHigh.toFixed(2)}
-                    `;
-                    }
-    
-                    // Update last position
-                    lastPosition = nextPos;
+                    if (callback) callback();  // Call the callback after animation is done
                 }
             }
-    
+
+            // Start the animation
             window.requestAnimationFrame(animate);
         }
-    
-        function handleTravelData(travelData, index) {
-            if (index >= travelData.length) return; // End recursion when all segments are processed
-    
-            const segment = travelData[index];
-            if (segment.type === "home") {
-                displayHomeGame(segment, () => {
-                    // Proceed after a pause for home games
-                    setTimeout(() => handleTravelData(travelData, index + 1), 500); // Short pause for home games
-                });
-            } else {
-                // For travel segments, animate and then proceed
-                animateMovement(segment.start.coords, segment.end.coords, segment.distance, () => {
-                    setTimeout(() => handleTravelData(travelData, index + 1), 2000); // Longer pause for travel animation
-                });
-            }
-        }
-    
-    
-    
-    
-        function displayHomeGame(segment, callback) {
-            let popupContent = `Home Game on ${segment.date}: ${segment.matchup} - No Travel`;
+
+        function handleTravelData(games, index, lastPosition = null) {
+            if (index >= games.length) return;  // End recursion when all games are processed
+
+            const segment = games[index];
+            const startCoords = lastPosition ? lastPosition : segment.start.coords;  // Use last position if available, else start.coords
+            const endCoords = segment.end.coords;
+
             if (!planeMarker) {
-                planeMarker = L.marker(segment.start.coords, {icon: planeIcon}).addTo(map);
-            } else {
-                planeMarker.setLatLng(segment.start.coords);
+                planeMarker = L.marker(startCoords, { icon: planeIcon }).addTo(map);
             }
-            planeMarker.bindPopup(popupContent, {autoClose: true}).openPopup();
-    
-            // Close the popup after a brief pause
-            setTimeout(() => {
-                planeMarker.closePopup();
-                callback(); // Continue processing after the popup has been shown and closed
-            }, 200); // This delay mimics the pause duration for home games
-        }
-    
-    
-        function addDistanceMarker(start, end, segment) {
-            // Always add markers, but control visibility based on the toggle state.
-            let showMarkers = !document.getElementById('removeTravelInfoToggle').checked;
-    
-            if (segment.type === "home" && showMarkers) {
-                let popupContentHome = `
-                <div class="custom-popup-home">
-                    <h4>Home Game</h4>
-                    <p>Matchup: ${segment.matchup}</p>
-                    <p>Date: ${segment.date}</p>
-                    <p>No travel required</p>
-                </div>
-            `;
-                L.popup({
-                    className: 'home-game-popup',
-                    autoClose: true,
-                    closeOnClick: true,
-                    maxWidth: 250
-                })
-                    .setLatLng(end)
-                    .setContent(popupContentHome)
-                    .openOn(map);
-            }
-    
-            if (segment.distance > 0) {
-                let midPoint = L.latLngBounds(start, end).getCenter();
-                let distanceMarker = createDistanceMarker(midPoint, segment, showMarkers);
-                allMarkers.push(distanceMarker); // Add to the global array for later control.
-            }
-    
-            // Ensure start and end markers are placed for visual clarity and manage their visibility directly.
-            let startMarker = createVisibilityManagedMarker(start, 'custom-icon-start', '<i class="fas fa-play"></i>');
-            allMarkers.push(startMarker);
-    
-            let endMarker = createVisibilityManagedMarker(end, 'custom-icon-end', '<i class="fas fa-flag-checkered"></i>');
-            allMarkers.push(endMarker);
-    
-        }
-    
-        function createDistanceMarker(midPoint, segment, isVisible) {
-            let fuelUsage = segment.distance * AVG_FUEL_CONSUMPTION_PER_KM;
-            let emissions = fuelUsage * KG_CO2_PER_GALLON_JET_FUEL;
-            let cost = fuelUsage * COST_PER_GALLON_JET_FUEL;
-            let variation = 0.1;
-            let popupContent = `
-            <div class="custom-popup">
-                <h4>Travel Details</h4>
-                <p>Matchup: ${segment.matchup}</p>
-                <p>Date: ${segment.date}</p>
-                <p>Distance: ${segment.distance.toFixed(2)} km</p>
-                <p>Fuel Usage: ${(fuelUsage * (1 - variation)).toFixed(2)} - ${(fuelUsage * (1 + variation)).toFixed(2)} gallons</p>
-                <p>Emissions: ${(emissions * (1 - variation)).toFixed(2)} - ${(emissions * (1 + variation)).toFixed(2)} kg CO2</p>
-                <p>Cost: $${(cost * (1 - variation)).toFixed(2)} - $${(cost * (1 + variation)).toFixed(2)}</p>
-            </div>
-        `;
-            let distanceIconHtml = `<div class="distance-icon-overlay">${segment.distance.toFixed(2)} km</div>`;
-            let marker = L.marker(midPoint, {
-                icon: L.divIcon({
-                    className: 'custom-icon-distance',
-                    html: distanceIconHtml,
-                    iconSize: L.point(0, 0)
-                })
-            }).bindPopup(popupContent);
-    
-            if (isVisible) {
-                marker.addTo(map);
-            }
-            return marker;
-        }
-    
-        function createVisibilityManagedMarker(position, className, iconHtml) {
-            let marker = L.marker(position, {
-                icon: L.divIcon({
-                    className: className,
-                    html: `<div class="${className}">${iconHtml}</div>`, // Encapsulate HTML inside a div with the correct class
-                    iconSize: [6, 6] // Adjust the size to match your CSS definitions
-                })
-            }).addTo(map);
-            allMarkers.push(marker); // Add to the array for easy reset
-            return marker;
-        }
-        // Toggle visibility function to be called on toggle switch change
-        function toggleMarkerVisibility() {
-            let shouldShow = !document.getElementById('removeTravelInfoToggle').checked;
-            allMarkers.forEach(marker => {
-                if (shouldShow) {
-                    marker.addTo(map);
-                } else {
-                    map.removeLayer(marker);
-                }
+
+            // Skip handling popups and polylines for now
+            console.log(segment.type === "home" ? "Home Game:" : "Away Game or Travel:", segment.matchup, 'on', segment.date);
+
+            // Animate the plane from start to end coordinates
+            animateMovement(startCoords, endCoords, () => {
+                // Once the animation is done, move to the next game
+                setTimeout(() => handleTravelData(games, index + 1, endCoords), 1000);  // Pass the endCoords as lastPosition
             });
         }
-    
-        // Add event listener to the toggle
-        document.getElementById('removeTravelInfoToggle').addEventListener('change', toggleMarkerVisibility);
-    
-    </script>
-    </body>
-    </html>
+
+
+
+            </script>
+        </body>
+        </html>
