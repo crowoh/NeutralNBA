@@ -55,12 +55,14 @@
     </div>
 
     <div id="main">
-        <div id="map"></div>
-        <div id="totalMiles">
-            Total distance: 0.00 km<br>
-            Total fuel usage: 0.00 - 0.00 gallons<br>
-            Total emissions: 0.00 - 0.00 kg CO2<br>
-            Total team fuel cost: $0.00 - $0.00
+        <div class="map-container">
+            <div id="map"></div>
+            <div id="totalMiles">
+                Total distance: 0.00 km<br>
+                Total fuel usage: 0.00 - 0.00 gallons<br>
+                Total emissions: 0.00 - 0.00 kg CO2<br>
+                Total team fuel cost: $0.00 - $0.00
+            </div>
         </div>
     </div>
 
@@ -69,18 +71,25 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-providers@latest/leaflet-providers.js"></script>
-    <script src="https://unpkg.com/leaflet.animatedmarker@latest/dist/AnimatedMarker.min.js"></script>
-    <script src="https://unpkg.com/leaflet-polylinedecorator@latest/dist/leaflet.polylineDecorator.js"></script>
+    <script src="https://unpkg.com/leaflet-ant-path/dist/leaflet-ant-path.js"></script>
 
     <script>
         var map = L.map('map').setView([37.0902, -95.7129], 4);
-
+        var totalDistance = 0;
         // Default Tile Layer
         var defaultLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 30,
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
-
+        var antPolyline = null;
+        var antPolyline = L.polyline.antPath([], {
+            color: '#FF0000',
+            pulseColor: '#FFFFFF',
+            delay: 400,
+            dashArray: [10, 20],
+            weight: 5,
+            hardwareAccelerated: true
+        }).addTo(map);
         // Dark Mode Tile Layer
         var darkLayer = L.tileLayer.provider('Stadia.AlidadeSmoothDark', {
             maxZoom: 30,
@@ -103,7 +112,7 @@
             iconAnchor: [16, 16],
             popupAnchor: [0, -16]
         });
-
+        var flightPath = null;
         var planeMarker = null;
         var polylineLayers = [];
         var allMarkers = [];
@@ -178,28 +187,76 @@
         }
 
         function handleTravelData(games, index, lastPosition = null) {
-            if (index >= games.length) return;  // End recursion when all games are processed
+            if (index >= games.length) return;
 
             const segment = games[index];
-            const startCoords = lastPosition ? lastPosition : segment.start.coords;  // Use last position if available, else start.coords
+            const startCoords = lastPosition || segment.start.coords;
             const endCoords = segment.end.coords;
+            const distance = L.latLng(startCoords).distanceTo(L.latLng(endCoords)).toFixed(2); // Calculate distance in meters
+
+            // Add new segment to the antPolyline during each iteration
+            antPolyline.addLatLng(startCoords);
+            antPolyline.addLatLng(endCoords);
 
             if (!planeMarker) {
                 planeMarker = L.marker(startCoords, { icon: planeIcon }).addTo(map);
             }
 
-            // Skip handling popups and polylines for now
-            console.log(segment.type === "home" ? "Home Game:" : "Away Game or Travel:", segment.matchup, 'on', segment.date);
+            // If the start and end coordinates are the same, it's a home game
+            if (startCoords[0] === endCoords[0] && startCoords[1] === endCoords[1]) {
+                // Ensure the popup content is valid HTML
+                const popupContent = `
+                    <div>
+                        <b>Home Game:</b><br>
+                        <span>Matchup: ${segment.matchup}</span><br>
+                        <span>Date: ${segment.date}</span><br>
+                        <span>Distance: ${distance} meters</span><br>
+                        <span>Type: ${segment.type}</span>
+                    </div>
+                `;
 
-            // Animate the plane from start to end coordinates
+                // Use bindPopup to bind the popup to the marker or the map at the home location
+                const homePopup = L.popup()
+                    .setLatLng(startCoords)
+                    .setContent(popupContent)
+                    .addTo(map);
+
+                homePopup.openPopup();
+
+                // Close the popup after 1 second
+                setTimeout(() => {
+                    map.closePopup(homePopup);
+                }, 1000);
+            }
+
+            // Animate the plane movement
             animateMovement(startCoords, endCoords, () => {
-                // Once the animation is done, move to the next game
-                setTimeout(() => handleTravelData(games, index + 1, endCoords), 1000);  // Pass the endCoords as lastPosition
+                updateDistanceInfo(distance);
+                // After the animation is complete, continue with the next segment
+                setTimeout(() => handleTravelData(games, index + 1, endCoords), 1000);
             });
         }
 
+        function updateDistanceInfo(distance) {
+            totalDistance += parseFloat(distance); // Add the current segment's distance to the total
+            const totalDistanceKm = (totalDistance / 1000).toFixed(2); // Convert meters to kilometers
 
+            // Assuming basic fuel usage/emission calculation, you can replace it with more accurate data.
+            const fuelUsageMin = (totalDistanceKm * 0.08).toFixed(2); // Assume 0.08 gallons per km
+            const fuelUsageMax = (totalDistanceKm * 0.15).toFixed(2); // Assume 0.15 gallons per km
+            const emissionsMin = (totalDistanceKm * 0.20).toFixed(2); // Assume 0.20 kg CO2 per km
+            const emissionsMax = (totalDistanceKm * 0.30).toFixed(2); // Assume 0.30 kg CO2 per km
+            const fuelCostMin = (fuelUsageMin * 3.50).toFixed(2); // Assume $3.50 per gallon
+            const fuelCostMax = (fuelUsageMax * 3.50).toFixed(2);
 
+            // Update the HTML with the current total distance and calculations
+            document.getElementById('totalMiles').innerHTML = `
+                Total distance: ${totalDistanceKm} km<br>
+                Total fuel usage: ${fuelUsageMin} - ${fuelUsageMax} gallons<br>
+                Total emissions: ${emissionsMin} - ${emissionsMax} kg CO2<br>
+                Total team fuel cost: $${fuelCostMin} - $${fuelCostMax}
+            `;
+        }
             </script>
         </body>
         </html>
