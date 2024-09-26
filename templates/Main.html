@@ -117,7 +117,7 @@
         var polylineLayers = [];
         var allMarkers = [];
         var currentSearchId = 0;
-
+        let animationFrameId = null;
         // Event listener for the search form
         document.getElementById('searchForm').addEventListener('submit', function (e) {
             e.preventDefault();
@@ -127,7 +127,13 @@
             var selectedSeason = document.getElementById('seasonSelection').value;
             var playoffsOnly = document.getElementById('playoffsOnlyToggle').checked;
 
-            var apiUrl = `/api/player-travel-data?name=${encodeURIComponent(playerName)}&season=${selectedSeason}&playoffsOnly=${playoffsOnly}`;
+            var isTeamSearch = playerName.toLowerCase().includes("team"); // Check if it's a team search
+
+            // Build the API URL dynamically based on whether it's a team or player search
+            var apiUrl = isTeamSearch ? 
+                `/api/team-travel-data?name=${encodeURIComponent(playerName)}&season=${selectedSeason}&playoffsOnly=${playoffsOnly}` : 
+                `/api/player-travel-data?name=${encodeURIComponent(playerName)}&season=${selectedSeason}&playoffsOnly=${playoffsOnly}`;
+
 
             fetch(apiUrl)
                 .then(response => response.json())
@@ -152,39 +158,62 @@
         });
 
         function resetMap() {
-            if (planeMarker) {
-                map.removeLayer(planeMarker);
-                planeMarker = null;
-            }
-            polylineLayers.forEach(layer => map.removeLayer(layer));
-            polylineLayers = [];
-        }
+    // Cancel any ongoing animation
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null; // Reset the animation frame ID
+    }
+
+    // Remove the plane marker if it exists
+    if (planeMarker) {
+        map.removeLayer(planeMarker);
+        planeMarker = null;
+    }
+
+    // Clear the antPolyline paths without deleting it
+    if (antPolyline) {
+        antPolyline.setLatLngs([]); // Clear the polyline but keep the instance
+    }
+
+    // Clear the polylineLayers array
+    polylineLayers = [];
+
+    // Reset the total distance tracker
+    totalDistance = 0;
+    document.getElementById('totalMiles').innerHTML = `
+        Total distance: 0.00 km<br>
+        Total fuel usage: 0.00 - 0.00 gallons<br>
+        Total emissions: 0.00 - 0.00 kg CO2<br>
+        Total team fuel cost: $0.00 - $0.00
+    `;
+}
 
         function animateMovement(start, end, callback) {
-            var startTime = performance.now();
-            var duration = 2000; // Duration of the animation (2 seconds)
-            
-            function animate(now) {
-                var elapsedTime = now - startTime;
-                var t = Math.min(1, elapsedTime / duration); // Progress ratio (0 to 1)
-                
-                // Calculate the next position based on the progress
-                var nextPos = [
-                    start[0] + t * (end[0] - start[0]),
-                    start[1] + t * (end[1] - start[1])
-                ];
-                planeMarker.setLatLng(nextPos);
+    var startTime = performance.now();
+    var duration = 2000; // Duration of the animation (2 seconds)
 
-                if (t < 1) {
-                    window.requestAnimationFrame(animate);
-                } else {
-                    if (callback) callback();  // Call the callback after animation is done
-                }
-            }
+    function animate(now) {
+        var elapsedTime = now - startTime;
+        var t = Math.min(1, elapsedTime / duration); // Progress ratio (0 to 1)
 
-            // Start the animation
-            window.requestAnimationFrame(animate);
+        // Calculate the next position based on the progress
+        var nextPos = [
+            start[0] + t * (end[0] - start[0]),
+            start[1] + t * (end[1] - start[1])
+        ];
+        planeMarker.setLatLng(nextPos);
+
+        if (t < 1) {
+            animationFrameId = window.requestAnimationFrame(animate); // Store the animation frame ID
+        } else {
+            animationFrameId = null; // Clear the animation frame ID after completion
+            if (callback) callback();  // Call the callback after animation is done
         }
+    }
+
+    // Start the animation
+    animationFrameId = window.requestAnimationFrame(animate);
+}
 
         function handleTravelData(games, index, lastPosition = null) {
             if (index >= games.length) return;
@@ -197,6 +226,7 @@
             // Add new segment to the antPolyline during each iteration
             antPolyline.addLatLng(startCoords);
             antPolyline.addLatLng(endCoords);
+            polylineLayers.push(antPolyline);
 
             if (!planeMarker) {
                 planeMarker = L.marker(startCoords, { icon: planeIcon }).addTo(map);

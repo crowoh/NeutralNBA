@@ -14,7 +14,7 @@ def get_player_travel_data():
     # Retrieve parameters from the request
     name = request.args.get('name')
     season = request.args.get('season', '2023-24')
-    playoffs_only = request.args.get('playoffsOnly', 'false').lower() == 'true'
+    #playoffs_only = request.args.get('playoffsOnly', 'false').lower() == 'true'
 
     if not name:
         return jsonify({"error": "Player or Team name is required."}), 400
