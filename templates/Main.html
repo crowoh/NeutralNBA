@@ -139,6 +139,11 @@
                 .then(response => response.json())
                 .then(data => {
                     console.log('Data received:', data);
+                    if (data.message) {
+                        // Display the custom message to the user
+                        alert(data.message);
+                        return;
+                    }
                     if (!data || !data.Games || !Array.isArray(data.Games)) {
                         throw new Error('Unexpected format or no data');
                     }
